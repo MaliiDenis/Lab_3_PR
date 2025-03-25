@@ -1,38 +1,109 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo List</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #fff;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        li button {
+            background-color: #dc3545;
+        }
+        li button:hover {
+            background-color: #c82333;
+        }
+        .input-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Todo List</h1>
-    <form id="taskForm">
-        <input type="text" id="taskTitle" placeholder="Enter task" required>
-        <button type="submit">Add Task</button>
-    </form>
-    <ul id="taskList"></ul>
+    <h1>Список дел</h1>
+    <div class="input-container">
+        <input type="text" id="new-task" placeholder="Добавить задачу">
+        <button onclick="addTask()">Добавить</button>
+    </div>
+    <ul id="task-list"></ul>
 
-    <script>
-        document.getElementById('taskForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            let taskTitle = document.getElementById('taskTitle').value;
+    <script>
+        async function loadTasks() {
+            let response = await fetch('/tasks');
+            let tasks = await response.json();
+            let list = document.getElementById("task-list");
+            list.innerHTML = "";
+            tasks.forEach(task => {
+                let item = document.createElement("li");
+                item.textContent = task.text;
+                let deleteButton = document.createElement("button");
+                deleteButton.textContent = "❌";
+                deleteButton.onclick = () => deleteTask(task.id);
+                item.appendChild(deleteButton);
+                list.appendChild(item);
+            });
+        }
 
-            fetch('http://localhost:5000/task', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({title: taskTitle})
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        });
-    </script>
+        async function addTask() {
+            let taskText = document.getElementById("new-task").value;
+            if (!taskText) return;
+            await fetch('/tasks', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ text: taskText })
+            });
+            document.getElementById("new-task").value = "";
+            loadTasks();
+        }
+
+        async function deleteTask(taskId) {
+            await fetch(`/tasks/${taskId}`, { method: 'DELETE' });
+            loadTasks();
+        }
+
+        loadTasks();
+    </script>
 </body>
 </html>
